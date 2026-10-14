@@ -1,0 +1,596 @@
+% This is redaccion.tex - Artículo científico para SIMBig 2025
+% Predicción Espacio-Temporal de Cambio de LULC en Cusco
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{makecell}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{adjustbox}
+\usepackage{multirow}
+\usepackage{float}
+%
+\begin{document}
+%
+% --- CONFIGURACIÓN DEL TÍTULO Y AUTORES ---
+\title{Spatiotemporal Prediction of Land Use and Land Cover Change in Cusco Using Random Forest, Cellular Automata and Markov Chains}
+\titlerunning{LULC Prediction in Cusco Using RF-CA-MC}
+
+\author{
+Marcelo Fabián Choque-Navarro\inst{1}\orcidID{0009-0001-7113-4896}
+\and
+Ivan Cesar Medrano-Valencia\inst{1}\orcidID{0000-0003-0623-090X}
+\and
+Harley Vera-Olivera\inst{1}\orcidID{0000-0003-2011-8797}
+\and
+Edwin Alvarez-Mamani\inst{1,2}\orcidID{0000-0001-9458-9116}
+}
+
+\authorrunning{M. F. Choque Navarro et al.}
+
+\institute{
+Universidad Nacional de San Antonio Abad del Cusco, Perú
+\\
+\email{\{160920, ivan.medrano, harley.vera\}}@unsaac.edu.pe
+\and
+Pontificia Universidad Católica del Perú, Lima, Perú
+\\
+\email{edwin.alvarez@pucp.edu.pe}
+}
+
+\maketitle    
+
+% --- RESUMEN Y PALABRAS CLAVE ---
+\begin{abstract}
+This research models the spatiotemporal dynamics of land use and land cover (LULC) in the city of Cusco (2004--2024) and predicts its state for 2034. Landsat and Sentinel-2 images were processed using Google Earth Engine (GEE), integrating seasonal median composites and spectral indices. The multitemporal classification structured with Random Forest (RF) was contrasted with an Artificial Neural Network (ANN). Historical analysis based on Markov matrices demonstrates that vegetation loss transitions to bare soil prior to its consolidation as an urban area. For the prospective phase, a hybrid Cellular Automata and Markov Chain (CA-Markov) model was calibrated, employing Multilayer Perceptron (MLP) neural networks to estimate transition potentials. After validating the model with the observed 2024 cover ($K_{\text{standard}}$: 0.6620, $K_{\text{location}}$: 0.6784), the projection to 2034 was executed under a \textit{Business-as-Usual} (BAU) scenario. The Permutation Feature Importance (PFI) calculation determined that elevation (54.70\%) and slope (8.12\%) operate as the main physical constraints, while proximity to educational institutions (16.21\%) and tourist attractions (6.97\%) constitute the most relevant anthropogenic attractors. The prediction estimates a net urban expansion of 16.67 $\text{km}^2$ at the expense of native vegetation.
+
+\keywords{Land use and land cover \and Random Forest \and CA-Markov \and Multilayer perceptron \and XAI }
+\end{abstract}
+
+
+% --- SECCIÓN 1: INTRODUCCIÓN ---
+\section{Introduction}
+\label{sec:intro}
+
+The city of Cusco, declared a World Cultural Heritage Site by the United Nations Educational, Scientific and Cultural Organization (UNESCO) in 1983, represents a scenario of exceptional global relevance due to its historical and architectural legacy \cite{623_tupay}. This city stands out as the most populated in its department, with a notable demographic density of 867.83 inhabitants/$\text{km}^2$ \cite{124_compendio}. The confluence of this accelerated population growth and intense tourism dynamism generates strong pressure on the territory, causing the urban area to expand towards multiple contiguous archaeological zones. In this context of transformation, the efficient detection of the current state and future changes in land use and land cover (LULC) through monitoring strategies supported by artificial intelligence acquires a strategic role for territorial planning and the safeguarding of its cultural landscape. The analysis and prediction of LULC dynamics are fundamental for territorial planning and sustainable development. 
+
+Various studies implement cutting-edge technologies to analyze spatial dynamics globally. Recent research has demonstrated that the use of machine learning algorithms such as Random Forest (RF) and Artificial Neural Networks (ANN), combined with cloud processing through platforms like Google Earth Engine (GEE), allows for classifying LULC with high accuracy, overcoming the challenges of large volumes of satellite data \cite{017_Algeria}. These methodologies identify that urban growth drastically impacts the decrease in vegetation lands and bare soil \cite{009_alabama}. To predict territorial scenarios, the literature highlights the integration of the Cellular Automata with Markov Chains (CA-Markov) model, assisted by a Multilayer Perceptron (MLP), demonstrating to be hybrid architectures capable of modeling the nonlinear nature of urban growth with high efficiency \cite{414_Duan2025}.
+
+However, despite the notable methodological advances reported in the state of the art, there is a considerable scarcity of LULC modeling and prediction studies conducted in the complex topography of the Peruvian territory. The lack of updated information and calibrated predictive models severely limits decision-making \cite{001_lluviaIndia}.
+
+As a consequence of this void in planning tools, unplanned urban expansion generates critical issues. In the environmental sphere, informal construction advances indiscriminately over unsuitable zones, degrading agricultural areas and occupying unstable slopes or riverbeds, which elevates the risk of disasters \cite{623_tupay}. At the heritage level, these occupations have invaded ecosystems and areas of significant archaeological value \cite{750_MendozaMamani2024}. Added to this, the development of new urban areas outside of urban habilitations lacks basic services and green spaces \cite{669_maestroeco}, exacerbating socioeconomic inequalities and causing the collapse of existing infrastructure \cite{809_Berrio2017Modelo}.
+
+Faced with this situation, the present study aims to quantify the estimated changes in LULC to support sustainable natural resource management decisions in the city of Cusco through the implementation of a predictive model. Specifically, it seeks to determine the level of accuracy of multitemporal spatial classification from satellite images, quantify change patterns and the most relevant transitions, and validate a predictive model based on historical trends that accurately reproduces future territorial scenarios.
+
+The present research is justified by the pressing need to manage land and its natural resources sustainably in a region with high ecological and heritage fragility. The relevance of the study lies in the implementation of state-of-the-art predictive models that allow for anticipating environmental risks and preventing ecosystem deterioration. In terms of practical application, this work provides a quantitatively and methodologically robust baseline that will equip urban planners and government authorities with essential technical tools to reformulate zoning regulations, optimize land use patterns, and protect both the ecosystem services and the archaeological heritage of the city.
+
+The article describes the materials and methodological design in Section \ref{sec:materials_methods}. Subsequently, it presents the experiments and results in Section \ref{sec:results}, covering the historical dynamics and projections to the year 2034, complemented by Explainable Artificial Intelligence (XAI). Finally, Section \ref{sec:discussion} discusses the territorial implications, and Section \ref{sec:conclusions} synthesizes the most important conclusions of the study.
+
+
+% --- SECCIÓN 2: MATERIALES Y MÉTODOS ---
+\section{Materials and Methods}
+\label{sec:materials_methods}
+The methodological design in Figure \ref{fig:diagrama_clasificacion} is oriented toward the historical reconstruction of land use, the quantification of its transformation, and the prediction of future scenarios. For this purpose, the city of Cusco, located in the southern Andean region of Peru (central coordinates $13^\circ 30' 45''$ S and $71^\circ 58' 33''$ W), was selected as the study area, with an official surface of 529.21 $\text{km}^2$, as detailed in Figure \ref{fig:area_estudio}.
+
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{imagenes/area_estudio_prov_cusco.png}
+\caption{Geographic location, districts, and altitudinal limits of the city of Cusco.}
+\label{fig:area_estudio}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{imagenes/clas_pred.png}
+\caption{Workflow for LULC classification and prediction.}
+\label{fig:diagrama_clasificacion}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Satellite Data Acquisition and Preprocessing}
+\label{subsec:adquisicion_preprocesamiento}
+
+For the acquisition of multispectral data in GEE, collections calibrated to \textit{Bottom-Of-Atmosphere} (BOA) surface reflectance were used, restricted to the austral winter period from June 20 to September 23 of each year. Regarding the sensors, the Thematic Mapper (TM) of Landsat 5 was employed for 2004, the Operational Land Imager (OLI) of Landsat 8 for 2014, and the Multi-Spectral Instrument (MSI) of Sentinel-2 for 2024, as observed in Table \ref{tab:datos_satelitales}, along with the ALOS World 3D AW3D30 Digital Elevation Model (DEM) at $30\text{ m}$ spatial resolution.
+
+Subsequently, the preprocessing of the collections encompassed radiometric filtering, temporal composition, gap filling, and spatial harmonization. Specifically, in the atmospheric filtering of Landsat 5 and 8, the QA\_PIXEL and QA\_RADSAT bands were used to mask clouds, shadows, and spectral saturation using bit masks, while in Sentinel-2, S2 Cloud Score+ was applied, retaining pixels with a clear sky probability $> 50\,\%$. Likewise, each annual collection was synthesized using the temporal median per pixel; in particular, for the 2004 composite, gaps were corrected by spatial neighborhood interpolation. Finally, the optical bands of Sentinel-2 were resampled to $30\text{ m}$ under the Universal Transverse Mercator (UTM) Zone 19S projection in the World Geodetic System 1984 (WGS 84).
+
+
+\begin{table}[!htbp]
+\centering
+\caption{Description of satellite collections and variable structure per year.}
+\label{tab:datos_satelitales}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{adjustbox}
+{width=\textwidth}
+\begin{tabular}{lccccc}
+\hline
+Satellite / sensor  &
+Number of images &
+Optical bands &
+Indices &
+DEM &
+Total\\
+\hline
+Landsat 5 TM (2004)   & 5  & 6 (SR\_B1--B5, B7)         & 6 & 2 & 14 \\
+Landsat 8 OLI (2014)  & 5  & 7 (SR\_B1--SR\_B7)         & 6 & 2 & 15 \\
+Sentinel-2 MSI (2024) & 19 & 10 (B2--B8, B8A, B11, B12) & 6 & 2 & 18 \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+% ------------------------------------------------------------------------------
+\subsection{Feature Extraction and Ancillary Variables}
+\label{subsec:extraccion_caracteristicas}
+% posibilidad agregar formulas
+Six normalized spectral indices and two topographic variables were incorporated into each annual composite. The calculated indices were the Normalized Difference Vegetation Index (NDVI), the Soil Adjusted Vegetation Index (SAVI) with a soil adjustment factor $L = 0.5$, the Bare Soil Index (BSI), the Normalized Difference Moisture Index (NDMI), the Normalized Difference Built-up Index (NDBI), and the Urban Index (UI) \cite{000_multiple_studies}. Additionally, elevation in meters and slope in degrees were derived from the AW3D30 DEM \cite{014_NileEtiopia}.
+
+According to the spectral availability of each mission, the 2004 composite (Landsat 5) provided six bands (SR\_B1 to SR\_B5, SR\_B7), forming a total of 14 variables, while the 2014 composite (Landsat 8) provided seven bands (SR\_B1 to SR\_B7), totaling 15 variables. For its part, the 2024 composite (Sentinel-2) contributed ten resampled bands (B2 to B8, B8A, B11, B12), totaling 18 variables per pixel, whose integrated structure is detailed in Table \ref{tab:datos_satelitales}. It should be noted that the spectral indices retained the interval of $-1 \leq x \leq 1$, whereas the optical bands and topographic variables maintained their original physical scales.
+
+% ------------------------------------------------------------------------------
+\subsection{Model Selection and Training}
+\label{subsec:entrenamiento_seleccion_modelos}
+For the LULC classification, two algorithms, RF and an MLP, were trained and evaluated simultaneously. The territorial classification considered three classes: urban, vegetation, and bare soil. Specifically, urban soil comprises residential, commercial, and industrial infrastructure, paved road networks, and impervious surfaces; vegetation encompasses forests, plantations, and riparian covers; while bare soil groups rocky surfaces, exposed soils, unpaved roads, and fallow agricultural fields \cite{010_forestKenia}. Likewise, the water class was excluded because river channels such as the Huatanay River have a width smaller than the 30-meter cell during the dry season \cite{606_CalvoPolo2017}.
+
+Regarding reference sampling, point collection was performed on Google Earth Pro images \cite{568_Zafar_Egipto} from August 2002, June 2014, and May 2024, supplemented by the Hazard Map of the city of Cusco for 2004 \cite{INDECI_PNUD_2004_SuelosCusco}. As a result, 1511 coordinates were collected for 2004, 1510 for 2014, and 1500 for 2024 ($\approx 500$ samples per class), the distribution of which is presented in Table \ref{tab:puntos_muestra}. Subsequently, the sample set for each year was randomly divided into 70\% for training and 30\% for validation \cite{568_Zafar_Egipto}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Distribution of the ground truth points collected for the LULC classification.}
+\label{tab:puntos_muestra}
+\small
+\begin{tabular}{lrrrr}
+\hline
+LULC class & 2004 & 2014 & 2024 & Total per class \\
+\hline
+Urban & 500 & 500 & 500 & 1500 \\
+Vegetation & 500 & 500 & 500 & 1500 \\
+Bare soil & 511 & 510 & 500 & 1521 \\
+Total per year & 1511 & 1510 & 1500 & 4521 \\
+\hline
+\end{tabular}
+\end{table}
+
+Based on the comparative evaluation between both models, the use of RF was determined as the final classifier due to its better consistency across the study years.
+
+%In the case of RF, parameter tuning per year was performed using a grid search over the number of trees (\textit{numTrees}, from 10 to 150 in steps of 10) and the bag fraction (\textit{bagFraction}, from 0.1 to 0.9 in steps of 0.1), selecting the combination with the highest accuracy in validation.
+
+%For its part, the classification with ANN was implemented using an MLP. Prior to training, the predictor variables of each cell were normalized to zero mean and unit variance (\texttt{StandardScaler}).
+
+%The MLP architecture adopted two hidden layers of 100 and 50 neurons, respectively. The model fitting used the Adam optimizer with an L2 penalty $\alpha = 10^{-4}$, a limit of 500 epochs, and early stopping to avoid overfitting. This training procedure was applied independently for 2004, 2014, and 2024. 
+%
+
+% ------------------------------------------------------------------------------
+
+\subsection{Accuracy Assessment and LULC Cartography}
+\label{subsec:analisis_precision_cartografia}
+
+To evaluate the cartographic accuracy of the 2004, 2014, and 2024 LULC maps, confusion matrices were employed on the 30\% test subset, calculating the metrics of overall accuracy (OA), Kappa coefficient, recall, and precision per class \cite{564_Patel_India}. In parallel, the temporal dynamics were determined through post-classification cross-tabulation between the decadal pairs 2004--2014 and 2014--2024. Thus, the net percentage change ($P_{\Delta}$) and the absolute annual rate of change ($R_{\Delta}$) are defined in Equation \ref{eq:tasa_cambio}:
+\begin{equation} \label{eq:tasa_cambio}
+P_{\Delta} (\%) = \frac{A_2 - A_1}{A_1} \times 100 \qquad \text{and} \qquad R_{\Delta} = \frac{A_2 - A_1}{t}
+\end{equation}
+where $A_1$ corresponds to the initial area, $A_2$ to the final area, and $t$ to the time interval in years. With this procedure, the resulting transition matrices record the spatial persistence, the gain and loss rates by category, the inter-class flows, and the net territorial changes.
+
+% ------------------------------------------------------------------------------
+\subsection{Spatiotemporal Prediction Modeling}
+\label{subsec:modelado_prediccion_espaciotemporal}
+
+In the spatial modeling phase, 12 geospatial layers of predictor variables were derived at a 30-meter resolution (UTM Zone 19S): elevation, slope, aspect \cite{424_Maddah2025}, and Euclidean distances to the hydrological network, tourist attractions, dispersed populations, urban centers \cite{461_Sarfo_2024}, roads \cite{454_AlKordi2025Landslide}, airport, railways \cite{004_urbanWatersWuhan}, educational institutions, and health facilities.
+
+Subsequently, the collinearity analysis using the Pearson correlation coefficient ($r$) per period excluded those variables with an absolute coefficient value equal to or greater than $0.8$ ($|r| \geq 0.8$). Consequently, distances to the airport and railways ($r > 0.83$ with respect to roads) were eliminated, as well as the distance to health facilities ($r = 0.82$ with educational institutions), retaining an independent subset of nine driving factors.
+
+Methodologically, the prospective simulation sequentially integrates three components: Markov Chains (MC), the spatial potential of the MLP, and iterative allocation by Cellular Automata (CA). In a first step, the areal demand for change was calculated with the empirical probability matrix of MC and the vector of absolute transitions of the calibration period. In a second step, to spatially distribute this demand, the MLP calculates the suitability probability of each pixel towards the destination classes. Finally, the CA module sorts the candidate pixels in decreasing order according to their potential and modifies their cartographic state until satisfying the change requirements defined by the MC.
+
+% ------------------------------------------------------------------------------
+\subsection{Empirical Validation of the Model}
+\label{subsec:validacion_empirica}
+
+The empirical validation process of the CA, MC, and MLP model was carried out by simulating the 2024 LULC state from the 2014 conditions (2004--2014 calibration), contrasting the predicted map against the reference satellite classification of the same year.
+
+In the categorical domain, the evaluation included the calculation of OA, standard Kappa, histogram Kappa ($K_{\text{histo}}$), and the quantity and location disagreement. Likewise, for the probabilistic evaluation, the neural outputs were transformed into a distribution from 0 to 1 using the Softmax function, obtaining the macro-average value of the Area Under the Receiver Operating Characteristic Curve (AUC-ROC) under the one-vs-rest scheme on stratified samples.
+
+Finally, the multiscale spatial evaluation applied Fuzzy Accuracy in a $3 \times 3$ pixel moving window, recording a match when the reference category coincides within the immediate surroundings of the predicted pixel. To this end, the fuzzy Kappa coefficient ($K_{\text{fuzzy}}$) integrated an interclass similarity matrix weighted by the historical transition frequency. Complementarily, a disagreement analysis by progressive spatial aggregation ($30$, $60$, $120$, $240$, $480$, and $960$ meters) quantified the quantity and location components at different resolutions.
+
+% ------------------------------------------------------------------------------
+\subsection{Future Projection and Interpretability}
+\label{subsec:proyeccion_futura_interpretabilidad}
+
+To examine the interpretability of the model through XAI, the contribution of the predictors was evaluated using the Permutation Feature Importance (PFI) method, randomly perturbing each variable in the validation set to measure the drop in the AUC metric without altering the synaptic weights. Complementarily, the functional relationship between the predicted probability and the continuous variables was analyzed with Partial Dependence Plots (PDP), evaluating the range of each predictor while the covariates were kept at their sample mean.
+
+Regarding the projection to the year 2034 under the \textit{Business-as-Usual} (BAU) trend scenario, the modeling employed the MC transition matrix of the 2014--2024 period. Operationally, the MLP model processed the 2024 LULC map along with the nine normalized driving factors to generate the transition potential maps. Finally, the CA module allocated the MC change requirements onto the cells with the highest suitability to generate the prospective land cover map of the city of Cusco towards the 2034 horizon.
+
+% --- SECCIÓN 3: RESULTADOS ---
+\section{Experiments and Results}
+\label{sec:results}
+
+This section presents the results of the multitemporal classification and the LULC simulation in Cusco. Initially, the configuration of the models and their cartographic accuracy are described. Then, the changes that occurred between 2004 and 2024 are analyzed, as well as the MC transition matrices. Finally, after validating the CA-Markov model for 2024, the projections to 2034 and the importance of the predictor variables are presented. 
+
+\subsection{Experimental Setup}
+\label{subsec:configuracion_experimental}
+
+LULC classification was performed using the built-in RF algorithm in GEE (JavaScript API) with 70\% of the data for training and 30\% for validation. Simultaneously, the MLP classifier was executed in Python (\textit{scikit-learn}) under Google Colab, with a stratified partition of 80\% and 20\%, respectively. Table \ref{tab:setup_clasificacion_lulc} indicates the optimal configurations and hyperparameters of each model per study year. The source code scripts are publicly available on \url{https://github.com/mfchn/lulc-cusco-2034-scripts.git}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Optimal hyperparameters of the LULC classification models.}
+\label{tab:setup_clasificacion_lulc}
+\small
+\begin{adjustbox}{max width=\textwidth}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{c l l}
+\hline
+Year & Random Forest & Multilayer perceptron \\
+\hline
+2004 & \texttt{numTrees} = 90, \texttt{bagFraction} = 0.9 & Layers = \texttt{(100, 50)}, \texttt{solver} = Adam, $\alpha = 10^{-4}$ \\
+2014 & \texttt{numTrees} = 50, \texttt{bagFraction} = 0.7 & Layers = \texttt{(100, 50)}, \texttt{solver} = Adam, $\alpha = 10^{-4}$ \\
+2024 & \texttt{numTrees} = 110, \texttt{bagFraction} = 0.9 & Layers = \texttt{(128, 64, 32)}, \texttt{solver} = Adam, $\alpha = 10^{-3}$ \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+
+Regarding the spatial simulation (CA-Markov), the processing was performed in Python using \textit{NumPy}. For the 2004--2014 calibration period, 9\,000 samples were obtained in a $3 \times 3$ pixel window with 99 explanatory variables per cell (9 normalized factors and 18 neighborhood variables). The hyperparameters of the transition potential MLP model are detailed in Table \ref{tab:setup_simulacion_transicion}. With the resulting maps as input, the CA-Markov model generated the 2024 simulation and the prediction to 2034 under the BAU scenario.
+
+\begin{table}[!htbp]
+\centering
+\caption{Configuration and hyperparameters of the transition potential MLP model.}
+\label{tab:setup_simulacion_transicion}
+\small
+\begin{tabular}{l l}
+\hline
+Model parameter & Selected value \\
+\hline
+Network architecture & 2 hidden layers \texttt{(100, 100)} \\
+Activation function & Hyperbolic tangent (\texttt{tanh}) \\
+Optimization algorithm & Stochastic gradient descent (SGD) \\
+Momentum ($\beta$) and regularization ($\alpha$) & $\beta = 0.006$, $\alpha = 0.0005$ \\
+Training & 11\,000 epochs \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+
+\subsection{Model Selection and Training}
+\label{subsec:res_seleccion_modelos}
+
+The RF classifier achieved OAs of 94.83\%, 95.29\%, and 95.03\% for the years 2004, 2014, and 2024, respectively, along with Kappa coefficients higher than 0.92, whose results are presented in Table~\ref{tab:comparison_rf_ann}. The class-level analysis, summarized in Table~\ref{tab:metricas_rf_pa_ua}, showed that the producer's (PA) and user's (UA) accuracies for the vegetation category reached 100.00\% in 2024. Likewise, Table~\ref{tab:comparison_classes_rf_ann} presents the comparison of the specific metrics (\textit{precision}, \textit{recall}, and \textit{F1-score}) obtained by both models. Although the MLP neural network recorded slightly higher values in the overall validation metrics, the RF classifier was selected for the generation of the LULC base cartography, because its results presented a more consistent spatial representation and a greater correspondence with the topographic variations of the study area.
+
+\begin{table}[!htbp]
+\centering
+\caption{Overall comparison of cartographic metrics: RF vs. MLP.}
+\label{tab:comparison_rf_ann}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{llrrr}
+\hline
+Year & Model & \makecell{OA \%} & \makecell{Kappa coefficient} & \makecell{Histogram Kappa ($K_{\text{histo}}$)} \\
+\hline
+2004 & RF  & 94.83 & 0.9224 & 0.9783 \\
+2004 & MLP & 96.36 & 0.9454 & 0.9752 \\
+\hline
+2014 & RF  & 95.29 & 0.9288 & 0.9612 \\
+2014 & MLP & 96.69 & 0.9503 & 0.9901 \\
+\hline
+2024 & RF  & 95.03 & 0.9253 & 0.9751 \\
+2024 & MLP & 97.33 & 0.9600 & 1.0000 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[!htbp]
+\centering
+\caption{RF performance metrics (PA and UA) for the years 2004, 2014, and 2024.}
+\label{tab:metricas_rf_pa_ua}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{lrrrrrr}
+\hline
+& \multicolumn{2}{c}{2004} & \multicolumn{2}{c}{2014} & \multicolumn{2}{c}{2024} \\
+LULC class & PA & UA & PA & UA & PA & UA \\
+\hline
+Urban & 92.61\% & 96.45\% & 88.81\% & 96.75\% & 89.33\% & 94.37\% \\
+Vegetation & 99.31\% & 96.67\% & 98.78\% & 99.39\% & 100.00\% & 100.00\% \\
+Bare soil & 93.21\% & 91.52\% & 97.04\% & 90.61\% & 95.15\% & 90.75\% \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[!htbp]
+\centering
+\caption{Class-level comparison of precision metrics: RF vs. MLP.}
+\label{tab:comparison_classes_rf_ann}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{adjustbox}{width=\textwidth}
+\begin{tabular}{llrrrrrrrrr}
+\hline
+& & \multicolumn{3}{c}{2004} & \multicolumn{3}{c}{2014} & \multicolumn{3}{c}{2024} \\
+LULC class & Metric & RF & MLP & $\Delta$ & RF & MLP & $\Delta$ & RF & MLP & $\Delta$ \\
+\hline
+Urban & precision (\%) & 96.45 & 94.23 & -2.22 & 96.75 & 95.96 & -0.79 & 94.37 & 96.00 & +1.63 \\
+       & recall (\%)    & 92.61 & 98.00 & +5.39 & 88.81 & 95.00 & +6.19 & 89.33 & 96.00 & +6.67 \\
+       & F1-score       & 0.9500 & 0.9608 & +0.0108 & 0.9300 & 0.9548 & +0.0248 & 0.9200 & 0.9600 & +0.0400 \\
+\hline
+Vegetation & precision (\%) & 96.67 & 98.02 & +1.35 & 99.39 & 100.00 & +0.61 & 100.00 & 100.00 & 0.00 \\
+           & recall (\%)    & 99.32 & 99.00 & -0.32 & 98.78 & 99.00 & +0.22 & 100.00 & 100.00 & 0.00 \\
+           & F1-score       & 0.9800 & 0.9851 & +0.0051 & 0.9900 & 0.9950 & +0.0050 & 1.0000 & 1.0000 & 0.0000 \\
+\hline
+Bare soil & precision (\%) & 91.52 & 96.91 & +5.39 & 90.61 & 94.23 & +3.62 & 90.75 & 96.00 & +5.25 \\
+              & recall (\%)    & 93.21 & 92.16 & -1.05 & 97.04 & 96.08 & -0.96 & 95.15 & 96.00 & +0.85 \\
+              & F1-score       & 0.9200 & 0.9447 & +0.0247 & 0.9400 & 0.9515 & +0.0115 & 0.9300 & 0.9600 & +0.0300 \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+\subsection{Accuracy Assessment and LULC Cartography}
+\label{subsec:res_precision_cartografia}
+
+According to the decadal areas and change rates presented in Table \ref{tab:areas_lulc_years}, the urban area expanded from 21.13 $\text{km}^2$ in 2004 to 50.28 $\text{km}^2$ in 2024 (+137.95\%), and its growth speed increased from 1.25 to 1.67 $\text{km}^2$/year. In contrast, vegetation was reduced by 26.42\% (-18.66 $\text{km}^2$), covering 9.80\% of the study area in 2024. Regarding bare soil, this class remained above 80\% of the total surface of the city in all evaluated years.
+
+\begin{table}[!htbp]
+\centering
+\caption{LULC areas ($\text{km}^2$) and decadal net change rates in the city of Cusco.}
+\label{tab:areas_lulc_years}
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lrrrrr}
+\hline
+LULC class & 2004 ($\text{km}^2$) & 2014 ($\text{km}^2$) & 2024 ($\text{km}^2$) & \makecell{Net change ($\text{km}^2$)} & \makecell{Net change (\%)} \\
+\hline
+Urban & 21.13 & 33.61 & 50.28 & +29.15 & +137.95\% \\
+Vegetation & 70.62 & 62.80 & 51.96 & -18.66 & -26.42\% \\
+Bare soil & 438.39 & 433.73 & 427.91 & -10.48 & -2.39\% \\
+Total & 530.14 & 530.14 & 530.15 & -- & -- \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Spatiotemporal Prediction Modeling}
+\label{subsec:res_modelado_prediccion}
+
+The MC transition probability matrices for the periods 2004--2014 and 2014--2024 are presented in Tables~\ref{tab:markov_2004_2014} and~\ref{tab:markov_2014_2024}, respectively. The main diagonal values evidence a high persistence of the urban area, exceeding 0.82, and of the bare soil, exceeding 0.92. Among the most relevant transitions, the conversion from vegetation to bare soil increased from 28.90\% in the first period to 35.58\% in the second. Likewise, the transition probability from bare soil to urban area increased from 0.0321 to 0.0486, suggesting that vegetation loss constitutes a prior stage to the urban expansion process.
+
+\begin{table*}[!htbp]
+\centering
+
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\caption{MC transition probability matrix estimated for 2004--2014.}
+\label{tab:markov_2004_2014}
+\small
+\begin{tabular}{lrrr}
+\hline
+\multirow{2}{*}{2004} & \multicolumn{3}{c}{2014} \\
+\cline{2-4}
+& Urban & Vegetation & Bare soil \\
+\hline
+Urban & 0.8645 & 0.0017 & 0.1337 \\
+Vegetation & 0.0179 & 0.6931 & 0.2890 \\
+Bare soil & 0.0321 & 0.0315 & 0.9364 \\
+\hline
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\caption{MC transition probability matrix estimated for 2014--2024.}
+\label{tab:markov_2014_2024}
+\small
+\begin{tabular}{lrrr}
+\hline
+\multirow{2}{*}{2014} & \multicolumn{3}{c}{2024} \\
+\cline{2-4}
+& Urban & Vegetation & Bare soil \\
+\hline
+Urban & 0.8278 & 0.0272 & 0.1451 \\
+Vegetation & 0.0219 & 0.6223 & 0.3558 \\
+Bare soil & 0.0486 & 0.0276 & 0.9238 \\
+\hline
+\end{tabular}
+\end{minipage}
+
+\end{table*}
+
+
+\subsection{Empirical Validation of the Model}
+\label{subsec:res_validacion_empirica}
+
+The validation results of the CA-Markov model for 2024 are reported in Table~\ref{tab:metricas_validacion_2024}. The comparison between the simulated map and the reference map evidenced an observed agreement of 88.90\% and a standard Kappa coefficient of 0.6620, indicating a substantial level of agreement. Likewise, the model recorded high quantity agreements ($P_{\text{quantity}} = 0.9921$; $K_{\text{histo}} = 0.9800$), demonstrating that it reproduced the proportions of the different land covers with high accuracy. On the other hand, the value of the fuzzy Kappa ($K_{\text{fuzzy}} = 0.7861$) and the multiclass AUC (0.9438) evidence an adequate representation of the spatial distribution and a high discriminative capacity of the model.
+
+\begin{table}[!htbp]
+\centering
+\caption{Empirical validation metrics of the CA-Markov-MLP simulation model for the year 2024.}
+\label{tab:metricas_validacion_2024}
+\small
+\begin{tabular}{lr}
+\hline
+Validation metric & Score \\
+\hline
+Observed agreement ($P_o$) & 0.8890 \\
+Expected agreement by chance ($P_e$) & 0.6717 \\
+Standard Kappa ($K_{\text{standard}}$) & 0.6620 \\
+Location Kappa ($K_{\text{location}}$) & 0.6784 \\
+Histogram Kappa ($K_{\text{histo}}$) & 0.9800 \\
+Quantity agreement ($P_{\text{quantity}}$) & 0.9921 \\
+Multiclass AUC-ROC & 0.9438 \\
+Fuzzy Kappa ($K_{\text{fuzzy}}$, 960 m window) & 0.7861 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Future Projection and Interpretability}
+\label{subsec:res_proyeccion_interpretabilidad}
+
+According to the PFI method, the relative importance of the nine predictor variables is synthesized in Table \ref{tab:importance_pfi}, where elevation was the variable with the highest contribution (54.70\%), limiting urban development to low-lying areas. Among the anthropogenic factors, the distance to educational institutions represented 16.21\%, followed by slope (8.12\%), tourist attractions (6.97\%), and the road network (4.84\%).
+
+\begin{table}[!htbp]
+\centering
+\caption{Ranking of predictor variable importance based on PFI.}
+\label{tab:importance_pfi}
+\small
+\begin{tabular}{clc}
+\hline
+Ranking & \makecell{Predictor variable} & \makecell{Relative importance (\%)} \\
+\hline
+1 & Elevation (DEM) & 54.70\% \\
+2 & Educ. institutions & 16.21\% \\
+3 & Slope & 8.12\% \\
+4 & Tourism & 6.97\% \\
+5 & Roads & 4.84\% \\
+6 & Large pop. & 2.93\% \\
+7 & Hydrography & 2.56\% \\
+8 & Dispersed pop. & 1.84\% \\
+9 & Aspect & 1.82\% \\
+\hline
+\end{tabular}
+\end{table}
+
+%\begin{figure}[!htbp]
+%\centering
+%\includegraphics[width=0.55\textwidth]{imagenes/auc_roc.png}
+%\caption{PFI ranking of predictor variable importance based on the impact on %the AUC.}
+%\label{fig:ranking_pfi}
+%\end{figure}
+
+The PDP curves in Figure~\ref{fig:pdp_mosaico} show that the transition probability towards urban cover is higher in areas of lower elevation, where it reaches approximately 0.48, and decreases progressively as the slope increases. Similarly, accessibility exerts a positive influence on the urban transition, recording probabilities close to 0.42 in the vicinity of educational institutions and 0.40 around tourist attractions. As the distance to these increases, the transition probability decreases to a range of 0.22 to 0.23.
+
+\begin{figure}[!htbp]
+  \centering
+  \setlength{\tabcolsep}{1pt}
+  \begin{tabular}{ccc}
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_dem.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_pendiente.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_aspecto.png} \\
+    {\scriptsize (a) Elevation (DEM)} &
+{\scriptsize (b) Slope} &
+{\scriptsize (c) Aspect} \\
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_rios.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_iiee.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_tur.png} \\
+    {\scriptsize (d) Hydrographical Network} &
+{\scriptsize (e) Educational Inst.} &
+{\scriptsize (f) Tourism} \\
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_via.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_pob.png} &
+    \includegraphics[width=0.32\textwidth]{imagenes/pdp_pobd.png} \\
+     {\scriptsize (d) Hydrographical Network} &
+{\scriptsize (h) Large Pop.} &
+{\scriptsize (i) Dispersed Pop. } \\
+  \end{tabular}
+  \caption{Partial dependence response curves (PDP) for the 9 spatial driving factors, showing the transition probability for each class.}
+  \label{fig:pdp_mosaico}
+\end{figure}
+
+The projection of land use and land cover for the year 2034, under the BAU scenario, is summarized quantitatively in Table~\ref{tab:stats_2034}, and its spatial distribution is presented in Figure~\ref{fig:clasificaciones_mosaico}, while the transition probabilities used for the simulation are shown in Table~\ref{tab:matrix_2034}. The results project an increase in the urban area of 16.67~$\text{km}^2$ (+33.15\% compared to 2024), reaching a surface of 66.95~$\text{km}^2$. In contrast, vegetation would experience a reduction of 10.85~$\text{km}^2$ (-20.88\%), decreasing its share from 9.80\% to 7.76\% of the territory. This behavior is consistent with the transition matrix, in which vegetation presents a probability of conversion to bare soil and urban areas, with no regeneration recorded from bare soil. Spatially, Figure~\ref{fig:clasificaciones_mosaico} shows that urban expansion is concentrated around existing urbanized areas, mainly occupying adjacent sectors of bare soil and, to a lesser extent, areas with vegetation cover.
+
+
+\begin{table}[!htbp]
+\centering
+\caption{Area, absolute change, and territorial proportion of LULC classes for 2024 and the projection to 2034 under the BAU scenario.}
+\label{tab:stats_2034}
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lrrrrr}
+\hline
+LULC class & 2024 ($\text{km}^2$) & 2034 ($\text{km}^2$) & Change ($\text{km}^2$) & \makecell{Proportion 2024 (\%)} & \makecell{Proportion 2034 (\%)} \\
+\hline
+Urban         &  50.28 &  66.95 & +16.67 &   9.48\% &  12.63\% \\
+Vegetation    &  51.96 &  41.11 & -10.85 &   9.80\% &   7.76\% \\
+Bare soil     & 427.91 & 422.09 &  -5.82 &  80.72\% &  79.62\% \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{MC transition probability matrix used for the 2024--2034 prediction.}
+\label{tab:matrix_2034}
+\small
+\begin{tabular}{lrrr}
+\hline
+\multirow{2}{*}{2024} & \multicolumn{3}{c}{2034} \\
+\cline{2-4}
+& Urban & Vegetation & Bare soil \\
+\hline
+Urban & 0.8849 & 0.0000 & 0.1151 \\
+Vegetation & 0.0264 & 0.7913 & 0.1823 \\
+Bare soil & 0.0493 & 0.0000 & 0.9507 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\begin{tabular}{ccc}
+\includegraphics[width=0.31\textwidth]{imagenes/optimal_classification_2004_2025_09_20.jpg} &
+\includegraphics[width=0.31\textwidth]{imagenes/optimal_classification_2014_2025_09_20.jpg} &
+\includegraphics[width=0.31\textwidth]{imagenes/optimal_classification_2024_2025_09_20.jpg} \\
+(a) Classified 2004 & (b) Classified 2014 & (c) Classified 2024 \\
+\end{tabular}
+\begin{tabular}{cc}
+\includegraphics[width=0.42\textwidth]{imagenes/prediccoin_cusco_2024.jpg} &
+\includegraphics[width=0.42\textwidth]{imagenes/prediccoin_cusco_2034.jpg} \\
+(d) 2024 validation prediction & (e) 2034 trend projection \\
+\end{tabular}
+\caption{LULC spatiotemporal evolution in Cusco, showing the classified historical maps of 2004 (a), 2014 (b), and 2024 (c), the validation simulation for 2024 (d), and the BAU scenario projection for 2034 (e).}
+\label{fig:clasificaciones_mosaico}
+\end{figure}
+
+% \subsubsection{Validation of Ecological Patterns (Shaded vs. Sunny Slopes)}
+%
+% Beyond the global metrics, the ecological validity of the classifier was verified by evaluating the correspondence between solar orientation (shaded slopes facing S--SW vs. sunny slopes facing N--NE) and water and vegetation retention. In the 2024 observational satellite map, 47.92\% of all vegetation was concentrated on shaded slopes (20.42\% S, 27.50\% SW), a pattern accurately captured by the model simulation for 2024 (51.02\% in shade: 22.65\% S, 28.37\% SW) and by the projection to the year 2034 (49.77\% in shade: 21.04\% S, 28.73\% SW). Similarly, the model reproduced the vegetation scarcity on sunny slopes (< 5\%).
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{LULC Classification and Change Detection}
+In agreement with previous studies \cite{014_NileEtiopia}, the RF algorithm mitigated the spatial noise inherent to MLP classifications. The temporal dynamics expose a transitional degradation pattern: deforested areas become bare soil prior to being absorbed by urban development \cite{018_rolRFcrecimiento}. The discrepancy observed in the geometric validation responds to the positional allocation errors inherent to the CA allocation.
+
+\subsection{Impacts, Limitations, and Driving Factors}
+Under the BAU scenario, projections to 2034 anticipate intensified anthropic pressure, constrained primarily by Andean morphological factors. PFI analysis demonstrates that elevation restricts population densification to the valley floor \cite{570_Lukas_Ethiopia}. This spatial confinement explains why native vegetation survival is projected almost exclusively on steep, shaded slopes (with southern and southwestern orientations harboring $\approx$60\% of remaining biomass). Furthermore, microclimatic dynamics identified by the classifier reduce vegetation suitability on sun-exposed slopes due to water deficits.
+
+Methodological limitations stem mainly from spectral confusion between paved surfaces and exposed sediments \cite{233_img_ndbi_y_reflec_bandas}. Such radiometric overlap induced localized prediction errors, including an apparent marginal de-urbanization driven by MC and an anomalous projection of urban fabric across airport runways. This behavior occurs because the MLP prioritizes physical suitability parameters (flat terrain and road proximity) without discriminating the legal or functional status of pre-existing infrastructure. Consequently, future research should incorporate restrictive zoning masks to optimize the spatial allocation of urban growth.
+
+% --- SECCIÓN 5: CONCLUSIONES ---
+\section{Conclusions}
+\label{sec:conclusions}
+This study evaluated the spatiotemporal LULC dynamics of Cusco from 2004 to 2034 using GEE and a hybrid CA-Markov model. 
+
+Integrating morphological variables and spectral indices into the RF classifier yielded an OA exceeding 94\%, outperforming the MLP in spatial stability. Chronological analysis across the past two decades reveals a 137.95\% expansion in urban footprint alongside a 26.42\% contraction in vegetation cover. 
+
+XAI assessment confirmed elevation as the primary physical constraint and proximity to educational institutions as the dominant anthropogenic attractor for urban growth. By 2034, urban area is projected to increase by a net 16.67 $\text{km}^2$, reducing total vegetation coverage to 7.76\% of the city's surface. These findings highlight the urgent need to revise territorial development plans to control informal occupation and protect topographically vulnerable slopes.
+
+%trabajos futuros
+
+% --- ACKNOWLEDGMENTS AND DECLARATIONS ---
+
+% --- BIBLIOGRAFÍA ---
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+% \bibliographystyle{splncs04}
+% \bibliography{mybibliography}
+%
+\bibliographystyle{splncs04}
+\bibliography{Bibliografia}
+
+\end{document}
