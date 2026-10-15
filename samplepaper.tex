@@ -159,7 +159,7 @@ Total per year & 1511 & 1510 & 1500 & 4521 \\
 \end{tabular}
 \end{table}
 
-\noindent Based on the comparative evaluation between both models, the use of RF was determined as the final classifier due to its better consistency across the study years.
+ Based on the comparative evaluation between both models, the use of RF was determined as the final classifier due to its better consistency across the study years.
 
 % ------------------------------------------------------------------------------
 \subsection{Accuracy Assessment and LULC Cartography}
@@ -230,7 +230,7 @@ Year & Random Forest & Multilayer perceptron \\
 \end{adjustbox}
 \end{table}
 
-\noindent Regarding the spatial simulation (CA-Markov), the processing was performed in Python using \textit{NumPy}. For the 2004--2014 calibration period, 9\,000 samples were obtained in a $3 \times 3$ pixel window with 99 explanatory variables per cell (9 normalized factors and 18 neighborhood variables). The hyperparameters of the transition potential MLP model are detailed in Table \ref{tab:setup_simulacion_transicion}. With the resulting maps as input, the CA-Markov model generated the 2024 simulation and the prediction to 2034 under the BAU scenario.
+ Regarding the spatial simulation (CA-Markov), the processing was performed in Python using \textit{NumPy}. For the 2004--2014 calibration period, 9\,000 samples were obtained in a $3 \times 3$ pixel window with 99 explanatory variables per cell (9 normalized factors and 18 neighborhood variables). The hyperparameters of the transition potential MLP model are detailed in Table \ref{tab:setup_simulacion_transicion}. With the resulting maps as input, the CA-Markov model generated the 2024 simulation and the prediction to 2034 under the BAU scenario.
 
 \begin{table}[t]
 \centering
@@ -444,7 +444,7 @@ Ranking & \makecell{Predictor variable} & \makecell{Relative importance (\%)} \\
 \end{tabular}
 \end{table}
 
-\noindent The PDP curves in Figure~\ref{fig:pdp_mosaico} show that the transition probability towards urban cover is higher in areas of lower elevation, where it reaches approximately 0.48, and decreases progressively as the slope increases. Similarly, accessibility exerts a positive influence on the urban transition, recording probabilities close to 0.42 in the vicinity of educational institutions and 0.40 around tourist attractions. As the distance to these increases, the transition probability decreases to a range of 0.22 to 0.23.
+ The PDP curves in Figure~\ref{fig:pdp_mosaico} show that the transition probability towards urban cover is higher in areas of lower elevation, where it reaches approximately 0.48, and decreases progressively as the slope increases. Similarly, accessibility exerts a positive influence on the urban transition, recording probabilities close to 0.42 in the vicinity of educational institutions and 0.40 around tourist attractions. As the distance to these increases, the transition probability decreases to a range of 0.22 to 0.23.
 
 \begin{figure}[t]
   \centering
@@ -473,7 +473,7 @@ Ranking & \makecell{Predictor variable} & \makecell{Relative importance (\%)} \\
   \label{fig:pdp_mosaico}
 \end{figure}
 
-\noindent The projection of land use and land cover for the year 2034, under the BAU scenario, is summarized quantitatively in Table~\ref{tab:stats_2034}, and its spatial distribution is presented in Figure~\ref{fig:clasificaciones_mosaico}, while the transition probabilities used for the simulation are shown in Table~\ref{tab:matrix_2034}. The results project an increase in the urban area of 16.67~$\text{km}^2$ (+33.15\% compared to 2024), reaching a surface of 66.95~$\text{km}^2$. In contrast, vegetation would experience a reduction of 10.85~$\text{km}^2$ (-20.88\%), decreasing its share from 9.80\% to 7.76\% of the territory. This behavior is consistent with the transition matrix, in which vegetation presents a probability of conversion to bare soil and urban areas, with no regeneration recorded from bare soil. Spatially, Figure~\ref{fig:clasificaciones_mosaico} shows that urban expansion is concentrated around existing urbanized areas, mainly occupying adjacent sectors of bare soil and, to a lesser extent, areas with vegetation cover.
+ The projection of land use and land cover for the year 2034, under the BAU scenario, is summarized quantitatively in Table~\ref{tab:stats_2034}, and its spatial distribution is presented in Figure~\ref{fig:clasificaciones_mosaico}, while the transition probabilities used for the simulation are shown in Table~\ref{tab:matrix_2034}. The results project an increase in the urban area of 16.67~$\text{km}^2$ (+33.15\% compared to 2024), reaching a surface of 66.95~$\text{km}^2$. In contrast, vegetation would experience a reduction of 10.85~$\text{km}^2$ (-20.88\%), decreasing its share from 9.80\% to 7.76\% of the territory. This behavior is consistent with the transition matrix, in which vegetation presents a probability of conversion to bare soil and urban areas, with no regeneration recorded from bare soil. Spatially, Figure~\ref{fig:clasificaciones_mosaico} shows that urban expansion is concentrated around existing urbanized areas, mainly occupying adjacent sectors of bare soil and, to a lesser extent, areas with vegetation cover.
 
 \begin{table}[t]
 \centering
